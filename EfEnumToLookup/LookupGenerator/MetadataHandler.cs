@@ -26,15 +26,22 @@
 			var references = new List<EnumReference>();
 			foreach (var entityType in entities)
 			{
-				var mappingFragment = FindSchemaMappingFragment(metadataWorkspace, entityType);
+				var mappingFragments = FindSchemaMappingFragment(metadataWorkspace, entityType);
+                
+                if(mappingFragments == null)
+                {
+                    continue;
+                }
 
-				// child types in TPH don't get mappings
-				if (mappingFragment == null)
-				{
-					continue;
-				}
-
-				references.AddRange(ProcessEdmProperties(entityType.Properties, mappingFragment, objectItemCollection));
+                foreach(var mappingFragment in mappingFragments)
+                {
+                    // child types in TPH don't get mappings
+                    if (mappingFragment == null)
+                    {
+                        continue;
+                    }
+                    references.AddRange(ProcessEdmProperties(entityType.Properties, mappingFragment, objectItemCollection));
+                }
 			}
 			return references;
 		}
@@ -151,7 +158,7 @@
 			return match;
 		}
 
-		private static MappingFragment FindSchemaMappingFragment(MetadataWorkspace metadata, EntityType entityType)
+		private static IEnumerable<MappingFragment> FindSchemaMappingFragment(MetadataWorkspace metadata, EntityType entityType)
 		{
 			try
 			{
@@ -222,26 +229,26 @@
 			return entityMetadata;
 		}
 
-		private static MappingFragment FindStorageMappingFragmentFromConceptual(MetadataWorkspace metadata, EntitySet conceptualEntitySet)
+		private static IEnumerable<MappingFragment> FindStorageMappingFragmentFromConceptual(MetadataWorkspace metadata, EntitySet conceptualEntitySet)
 		{
 			var storageMapping = FindStorageMapping(metadata, conceptualEntitySet);
 
 			return FindStorageMappingFragmentInStorageMapping(storageMapping);
 		}
 
-		private static MappingFragment FindStorageMappingFragmentInStorageMapping(EntitySetMapping storageMapping)
+		private static IEnumerable<MappingFragment> FindStorageMappingFragmentInStorageMapping(EntitySetMapping storageMapping)
 		{
 			// Find the storage mapping fragment that the entity is mapped to
 			var entityTypeMappings = storageMapping.EntityTypeMappings;
 			var entityTypeMapping = entityTypeMappings.First();
 			// using First() because Table-per-Hierarchy (TPH) produces multiple copies of the entity type mapping
 			var fragments = entityTypeMapping.Fragments;
-			//if (fragments.Count() != 1)
-			//{
-			//	throw new EnumGeneratorException(string.Format("{0} Fragments found.", fragments.Count()));
-			//}
-			var fragment = fragments.FirstOrDefault();
-			return fragment;
+            //if (fragments.Count() != 1)
+            //{
+            //	throw new EnumGeneratorException(string.Format("{0} Fragments found.", fragments.Count()));
+            //}
+            //var fragment = fragments.LastOrDefault();
+            return fragments;
 		}
 
 		private static EntitySetMapping FindStorageMapping(MetadataWorkspace metadata, EntitySet conceptualEntitySet)
