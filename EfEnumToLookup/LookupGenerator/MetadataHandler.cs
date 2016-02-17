@@ -36,7 +36,7 @@
                 foreach(var mappingFragment in mappingFragments)
                 {
                     // child types in TPH don't get mappings
-                    if (mappingFragment == null)
+                    if (mappingFragment == null || ((((EntityTypeMapping)mappingFragment.TypeMapping).EntityType?.Name ?? "") != entityType.Name))
                     {
                         continue;
                     }
@@ -189,19 +189,28 @@
 			{
 				throw new EnumGeneratorException(string.Format("{0} EntityContainer's found.", containers.Count()));
 			}
-			var container = containers.Single();
+            var container = containers.Single();
+            var container2 = metadata.GetItems<EntityType>(DataSpace.CSpace);
 
-			var entitySets = container
-				.EntitySets
-				.Where(s => s.ElementType.Name == entityMetadata.Name)
-				// doesn't seem to be possible to get at the Object-Conceptual mappings from the public API so match on name.
-				.ToList();
-
-			// Child types in Table-per-Hierarchy don't have any mappings defined as they don't add any new tables, so skip them.
-			if (!entitySets.Any())
+            var entitySets = container
+                 .EntitySets
+                 .Where(s => s.ElementType.Name == entityMetadata.Name)
+                 // doesn't seem to be possible to get at the Object-Conceptual mappings from the public API so match on name.
+                 .ToList();
+            
+            if (!entitySets.Any())
 			{
-				return null;
-			}
+				entitySets = container
+                 .EntitySets
+                 .Where(s => entityMetadata.BaseType == null ? false : s.ElementType.Name == entityMetadata.BaseType.Name)
+                 // doesn't seem to be possible to get at the Object-Conceptual mappings from the public API so match on name.
+                 .ToList();
+            }
+
+            if(!entitySets.Any())
+            {
+                return null;
+            }
 
 			if (entitySets.Count() != 1)
 			{
@@ -241,8 +250,8 @@
 			// Find the storage mapping fragment that the entity is mapped to
 			var entityTypeMappings = storageMapping.EntityTypeMappings;
 			var entityTypeMapping = entityTypeMappings.First();
-			// using First() because Table-per-Hierarchy (TPH) produces multiple copies of the entity type mapping
-			var fragments = entityTypeMapping.Fragments;
+            // using First() because Table-per-Hierarchy (TPH) produces multiple copies of the entity type mapping
+            var fragments = entityTypeMappings.SelectMany(x => x.Fragments);
             //if (fragments.Count() != 1)
             //{
             //	throw new EnumGeneratorException(string.Format("{0} Fragments found.", fragments.Count()));
