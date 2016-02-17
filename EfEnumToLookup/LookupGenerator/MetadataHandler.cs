@@ -236,11 +236,11 @@
 			var entityTypeMapping = entityTypeMappings.First();
 			// using First() because Table-per-Hierarchy (TPH) produces multiple copies of the entity type mapping
 			var fragments = entityTypeMapping.Fragments;
-			if (fragments.Count() != 1)
-			{
-				throw new EnumGeneratorException(string.Format("{0} Fragments found.", fragments.Count()));
-			}
-			var fragment = fragments.Single();
+			//if (fragments.Count() != 1)
+			//{
+			//	throw new EnumGeneratorException(string.Format("{0} Fragments found.", fragments.Count()));
+			//}
+			var fragment = fragments.FirstOrDefault();
 			return fragment;
 		}
 
